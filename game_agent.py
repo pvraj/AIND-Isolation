@@ -68,6 +68,10 @@ def custom_score_2(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
+    # each time we move, we are redoing some work. if we could store this work, that would be beneficial.
+    # for example, we examine 7 moves initially. and make a choice. then the opponent makes a move which will already
+    # be something we evaluated. (same hash value? examine using hash function).
+
     raise NotImplementedError
 
 
@@ -127,39 +131,7 @@ class IsolationPlayer:
 
 
 
-def minimax_recursion_helper(self, game, depth, is_maximizing_player):
-    """
 
-    :param self: player object
-    :param game: isolate board object
-    :param depth: integer (num levels to traverse)
-    :param is_maximizing_player: (boolean)
-    :return: value (best score)
-    """
-    if self.time_left() < self.TIMER_THRESHOLD:
-        raise SearchTimeout()
-
-    if depth == 0: # too deep, get the score
-        return self.score(game, self) # return the score
-
-    legal_moves = game.get_legal_moves(self)
-
-    if not legal_moves: # more moves (either a leaf or dead end?). we already handled earlier if they can't go anywhere
-        return self.score(game, self) # return the score
-    # based on wikipedia example code
-    if is_maximizing_player:
-        best_move_score = float("-inf") # figure out later how to do infinities in python.
-        for child_node_move in legal_moves: # for each possible child node
-            child_node_move_score = minimax_recursion_helper(self, game.forecast_move(child_node_move), depth-1, False)
-            best_move_score = max(best_move_score, child_node_move_score)
-        return best_move_score # return a score
-
-    else: # minimizer
-        best_move_score = float("inf")
-        for child_node_move in legal_moves:
-            child_node_move_score = minimax_recursion_helper(self, game.forecast_move(child_node_move), depth-1, True)
-            best_move_score = min(best_move_score, child_node_move_score)
-        return best_move_score # return a score
 
 
 class MinimaxPlayer(IsolationPlayer):
@@ -255,19 +227,53 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        legal_moves = game.get_legal_moves(self)
+        legal_moves = game.get_legal_moves()
 
         if not legal_moves:
             return (-1, -1) # no valid moves, means you lose
 
         legal_move_to_score_map = {}
-        for legal_move in legal_moves: # for each possible move
-            # get the score of each legal move, and insert it into the map of {legal_moves: score}
-            legal_move_to_score_map[legal_move] = minimax_recursion_helper(self, game.forecast_move(legal_move), depth, True)
+        for legal_move in legal_moves: # get the score of each legal move, and insert it into the map of {legal_moves: score}
+            legal_move_to_score_map[legal_move] = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(legal_move), depth-1, False)
         best_move = max(legal_move_to_score_map, key=lambda k: legal_move_to_score_map[k])
         print("our legal move score map: %s" % legal_move_to_score_map)
-        print("our best move %s" % str(best_move)) # figure out which legal move has the best score. return it
-        return best_move
+        print("our best move %s" % str(best_move))
+        return best_move # return the move with the highest score
+
+    def minimax_recursion_helper(self, game, depth, is_maximizing_player):
+        """
+        :param self: (game_agent.MinimaxPlayer, sample_players.GreedyPlayer, etc.)
+        :param game: (isolation.Board)
+        :param depth: num levels to traverse (int)
+        :param is_maximizing_player: (boolean)
+        :return: score value (int)
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if depth == 0:  # too deep, get the score
+            return self.score(game, self)
+
+        legal_moves = game.get_legal_moves()
+
+        if not legal_moves:  # leaf or dead end
+            return self.score(game, self)
+
+        if is_maximizing_player:  # based on wikipedia example code
+            best_move_score = float("-inf")
+            for child_node_move in legal_moves:  # for each possible child node
+                child_node_move_score = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, False)
+                best_move_score = max(best_move_score, child_node_move_score)
+            # print("maximizer best %s" % best_move_score)
+            return best_move_score
+
+        else:  # minimizer
+            best_move_score = float("inf")
+            for child_node_move in legal_moves:
+                child_node_move_score = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, True)
+                best_move_score = min(best_move_score, child_node_move_score)
+            # print("minimizer best %s" % best_move_score)
+            return best_move_score
 
 
 class AlphaBetaPlayer(IsolationPlayer):
