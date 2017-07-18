@@ -257,7 +257,7 @@ if __name__ == "__main__":
     from isolation import Board
 
     # create an isolation board (by default 7x7)
-    player1 = game_agent.MinimaxPlayer() # my minimax player
+    player1 = game_agent.AlphaBetaPlayer() # my minimax player
     player2 = GreedyPlayer() # sample greedy player
     game = Board(player1, player2)
 

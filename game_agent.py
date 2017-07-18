@@ -236,8 +236,8 @@ class MinimaxPlayer(IsolationPlayer):
         for legal_move in legal_moves: # get the score of each legal move, and insert it into the map of {legal_moves: score}
             legal_move_to_score_map[legal_move] = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(legal_move), depth-1, False)
         best_move = max(legal_move_to_score_map, key=lambda k: legal_move_to_score_map[k])
-        print("our legal move score map: %s" % legal_move_to_score_map)
-        print("our best move %s" % str(best_move))
+        # print("our legal move score map: %s" % legal_move_to_score_map)
+        # print("our best move %s" % str(best_move))
         return best_move # return the move with the highest score
 
     def minimax_recursion_helper(self, game, depth, is_maximizing_player):
@@ -264,7 +264,6 @@ class MinimaxPlayer(IsolationPlayer):
             for child_node_move in legal_moves:  # for each possible child node
                 child_node_move_score = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, False)
                 best_move_score = max(best_move_score, child_node_move_score)
-            # print("maximizer best %s" % best_move_score)
             return best_move_score
 
         else:  # minimizer
@@ -272,7 +271,6 @@ class MinimaxPlayer(IsolationPlayer):
             for child_node_move in legal_moves:
                 child_node_move_score = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, True)
                 best_move_score = min(best_move_score, child_node_move_score)
-            # print("minimizer best %s" % best_move_score)
             return best_move_score
 
 
@@ -313,9 +311,16 @@ class AlphaBetaPlayer(IsolationPlayer):
             (-1, -1) if there are no available legal moves.
         """
         self.time_left = time_left
-
-        # TODO: finish this function!
-        raise NotImplementedError
+        best_move = (-1, -1) # initialize with losing move
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            current_depth = 1
+            while True:
+                best_move = self.alphabeta(game, current_depth)
+                current_depth += 1
+        except SearchTimeout: # Handle any actions required after timeout as needed
+            return best_move  # Return the best move from the last completed search iteration
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -365,5 +370,45 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        legal_moves = game.get_legal_moves()
+
+        if not legal_moves:
+            return (-1, -1) # no valid moves, means you lose
+
+        legal_move_to_score_map = {}
+        for legal_move in legal_moves:
+            legal_move_to_score_map[legal_move] = AlphaBetaPlayer.alphabeta_recursion_helper(self, game.forecast_move(legal_move), depth - 1, False, alpha, beta)
+            alpha = max(alpha, legal_move_to_score_map[legal_move])
+        best_move = max(legal_move_to_score_map, key=lambda k: legal_move_to_score_map[k])
+        # print("our legal move score map: %s" % legal_move_to_score_map)
+        return best_move
+
+    def alphabeta_recursion_helper(self, game, depth, is_maximizing_player, alpha, beta):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if depth == 0:  # too deep, get the score
+            return self.score(game, self)
+
+        legal_moves = game.get_legal_moves()
+
+        if not legal_moves:  # leaf or dead end
+            return self.score(game, self)
+
+        if is_maximizing_player:
+            best_child_node_move_score = float("-inf")
+            for child_node_move in legal_moves:  # for each possible child node
+                best_child_node_move_score = max(best_child_node_move_score, AlphaBetaPlayer.alphabeta_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, False, alpha, beta))
+                if best_child_node_move_score >= beta:
+                    return best_child_node_move_score # prune (terminate early)
+                alpha = max(alpha, best_child_node_move_score)
+            return best_child_node_move_score # return best path to maximizer
+
+        else:  # minimizer
+            best_child_node_move_score = float("inf")
+            for child_node_move in legal_moves:
+                best_child_node_move_score = min(best_child_node_move_score, AlphaBetaPlayer.alphabeta_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, True, alpha, beta))
+                if best_child_node_move_score <= alpha:
+                    return best_child_node_move_score # prune (terminate early)
+                beta = min(beta, best_child_node_move_score)
+            return best_child_node_move_score # return best path to minimizer
