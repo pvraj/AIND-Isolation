@@ -2,17 +2,25 @@
 test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
-import random
-
+from math import sqrt
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
 
+def get_distance_between_2_points(current_player_location, enemy_player_location, maximize_distance):
+    current_player_x, current_player_y = current_player_location
+    enemy_player_x, enemy_player_y = enemy_player_location
+    if maximize_distance:
+        return sqrt(((enemy_player_y - current_player_y) ** 2) + ((enemy_player_x - current_player_x) ** 2))
+    return -1 * sqrt(((enemy_player_y - current_player_y) ** 2) + ((enemy_player_x - current_player_x) ** 2))
+
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
+
+    Heuristic: Using the distance formula, maximize the distance between our player and the enemy player (essentially, run away from the opponent, to go into a 'survival' mode).
 
     This should be the best heuristic function for your project submission.
 
@@ -40,15 +48,15 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    own_moves = len(game.get_legal_moves(player))
-    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves)
+    return get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
 
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
+    Heuristic: Using the distance formula, minimize the distance between our player and the enemy player (essentially, aggressively follow the opponent to attempt to mimick their moves and avoid being boxed in). Reflection is not as easy with knights as it is with queens because knights cannot don't have the ability to move to as many spaces as queens. However, by keeping the knight following
+
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
 
@@ -67,18 +75,27 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    # each time we move, we are redoing some work. if we could store this work, that would be beneficial.
-    # for example, we examine 7 moves initially. and make a choice. then the opponent makes a move which will already
-    # be something we evaluated. (same hash value? examine using hash function).
+    if game.is_loser(player):
+        return float("-inf")
 
-    raise NotImplementedError
+    if game.is_winner(player):
+        return float("inf")
+
+    moves_total_spaces_ratio = game.move_count / (game.height * game.width)
+
+    if moves_total_spaces_ratio > 0.45:
+        enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+        my_moves = frozenset(game.get_legal_moves(player))
+        return (2 * (len(my_moves) - len(enemy_moves)))  + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + 2*len(my_moves.intersection(enemy_moves))
+    return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False)
 
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
+    Heuristic: Attempt to "circle the enemy" by focusing on the spaces closest to the corners of the board. Specifically, assign a score based on the highest distance to a corner from a space.
+
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
 
@@ -97,9 +114,21 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    moves_total_spaces_ratio = game.move_count / (game.height * game.width)
+    # the more moves taken up, the less space there is in hte middle. we must then play defense or isolate the enemy
+    # my moves / enemy moves + distance to center
+    if moves_total_spaces_ratio < 0.30:
+        # quick, deep
+        # print("fast")
+        return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False)
+    else:
+        return get_distance_between_2_points(game.get_player_location(player), (game.height / 2, game.width / 2), True) + len(game.get_legal_moves(player))
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
