@@ -10,6 +10,13 @@ class SearchTimeout(Exception):
 
 
 def get_distance_between_2_points(current_player_location, enemy_player_location, maximize_distance):
+    '''
+    Description: Given as input 2 coordinates, return the distance between them. (If specified, return the distance in negative form).
+    :param current_player_location: (tuple of 2 integers) Current player's location in tuple form.
+    :param enemy_player_location: (tuple of 2 integers) Enemy Player's location in tuple form.
+    :param maximize_distance: (boolean). True if maximizing distance. False if minimizing distance. The purpose of this is in heuristics where a greater distance corresponds to a greater score, a positive value is desired. In heuristics where a smaller distance corresponds to a greater score we need to invert the distance to a negative number. For example, if maximizing the distance between 2 points, 5 > 1. If minimizing the distance between 2 points, -1 * 1 > -1 * 5.
+    :return: (float) Distance between 2 pairs of coordinates as a positive or negative float.
+    '''
     current_player_x, current_player_y = current_player_location
     enemy_player_x, enemy_player_y = enemy_player_location
     if maximize_distance:
@@ -17,7 +24,7 @@ def get_distance_between_2_points(current_player_location, enemy_player_location
     return -1 * sqrt(((enemy_player_y - current_player_y) ** 2) + ((enemy_player_x - current_player_x) ** 2))
 
 def custom_score(game, player):
-    """Calculate the heuristic value of a game state from the point of view
+    """Description: Calculate the heuristic value of a game state from the point of view
     of the given player.
 
     Heuristic: Using the distance formula, maximize the distance between our player and the enemy player (essentially, run away from the opponent, to go into a 'survival' mode).
@@ -48,7 +55,12 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
+    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+    my_moves = frozenset(game.get_legal_moves(player))
+    if (len(enemy_moves) < 1):
+        return 2*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
+    else:
+        return 2*(len(my_moves) - len(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
 
 
 def custom_score_2(game, player):
@@ -83,11 +95,11 @@ def custom_score_2(game, player):
 
     moves_total_spaces_ratio = game.move_count / (game.height * game.width)
 
+    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+    my_moves = frozenset(game.get_legal_moves(player))
     if moves_total_spaces_ratio > 0.45:
-        enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
-        my_moves = frozenset(game.get_legal_moves(player))
-        return (2 * (len(my_moves) - len(enemy_moves)))  + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + 2*len(my_moves.intersection(enemy_moves))
-    return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False)
+        return (2 * (len(my_moves) - len(enemy_moves))) + 2*len(my_moves.intersection(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
+    return 2*get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + (len(my_moves) - len(enemy_moves))
 
 
 def custom_score_3(game, player):
@@ -121,14 +133,11 @@ def custom_score_3(game, player):
         return float("inf")
 
     moves_total_spaces_ratio = game.move_count / (game.height * game.width)
-    # the more moves taken up, the less space there is in hte middle. we must then play defense or isolate the enemy
-    # my moves / enemy moves + distance to center
     if moves_total_spaces_ratio < 0.30:
-        # quick, deep
-        # print("fast")
         return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False)
-    else:
-        return get_distance_between_2_points(game.get_player_location(player), (game.height / 2, game.width / 2), True) + len(game.get_legal_moves(player))
+    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+    my_moves = frozenset(game.get_legal_moves(player))
+    return get_distance_between_2_points(game.get_player_location(player), (game.height / 2, game.width / 2), True) + 2*(len(my_moves) - len(enemy_moves))
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
