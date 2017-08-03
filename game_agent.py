@@ -57,10 +57,10 @@ def custom_score(game, player):
 
     enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
     my_moves = frozenset(game.get_legal_moves(player))
-    if (len(enemy_moves) < 1):
+    if len(enemy_moves) < 1:
         return 2*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
     else:
-        return 2*(len(my_moves) - len(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
+        return 2*(len(my_moves) / len(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
 
 
 def custom_score_2(game, player):
@@ -94,13 +94,17 @@ def custom_score_2(game, player):
         return float("inf")
 
     moves_total_spaces_ratio = game.move_count / (game.height * game.width)
-
     enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
     my_moves = frozenset(game.get_legal_moves(player))
-    if moves_total_spaces_ratio > 0.45:
-        return (2 * (len(my_moves) - len(enemy_moves))) + 2*len(my_moves.intersection(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
-    return 2*get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + (len(my_moves) - len(enemy_moves))
 
+    if moves_total_spaces_ratio > 0.45:
+        if len(enemy_moves) < 1:
+            return 2*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
+        return 2*(len(my_moves) / len(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
+    else:
+        if len(enemy_moves) < 1:
+            return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + 2*len(my_moves)
+        return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + 2*(len(my_moves) / len(enemy_moves))
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -137,7 +141,7 @@ def custom_score_3(game, player):
         return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False)
     enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
     my_moves = frozenset(game.get_legal_moves(player))
-    return get_distance_between_2_points(game.get_player_location(player), (game.height / 2, game.width / 2), True) + 2*(len(my_moves) - len(enemy_moves))
+    return get_distance_between_2_points(game.get_player_location(player), (game.height / 2, game.width / 2), True) + 2*(len(my_moves) - len(enemy_moves)) + 2*(len(my_moves.intersection(enemy_moves)))
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -166,10 +170,6 @@ class IsolationPlayer:
         self.score = score_fn
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
-
-
-
-
 
 
 class MinimaxPlayer(IsolationPlayer):
@@ -268,45 +268,45 @@ class MinimaxPlayer(IsolationPlayer):
         legal_moves = game.get_legal_moves()
 
         if not legal_moves:
-            return (-1, -1) # no valid moves, means you lose
+            return (-1, -1) # no valid moves (lose game)
 
-        legal_move_to_score_map = {}
-        for legal_move in legal_moves: # get the score of each legal move, and insert it into the map of {legal_moves: score}
+        legal_move_to_score_map = {} # get the score of each legal move {legal_move1: score1, legal_move2: score2, etc...}
+        for legal_move in legal_moves:
             legal_move_to_score_map[legal_move] = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(legal_move), depth-1, False)
         best_move = max(legal_move_to_score_map, key=lambda k: legal_move_to_score_map[k])
-        # print("our legal move score map: %s" % legal_move_to_score_map)
-        # print("our best move %s" % str(best_move))
         return best_move # return the move with the highest score
 
     def minimax_recursion_helper(self, game, depth, is_maximizing_player):
         """
-        :param self: (game_agent.MinimaxPlayer, sample_players.GreedyPlayer, etc.)
-        :param game: (isolation.Board)
-        :param depth: num levels to traverse (int)
-        :param is_maximizing_player: (boolean)
-        :return: score value (int)
+        Description: This helper function implements the recursive portion of the minimax algorithm from the text. When called from the minimax function, minimax_recursion_helper will return the score associated with the best_move to take from the root.
+
+        :param self: (MinimaxPlayer) Minimax player object.
+        :param game: (isolation.Board) Isolation game object.
+        :param depth: (int) num levels to traverse.
+        :param is_maximizing_player: (boolean) True if maximizer node; False if minimizer node.
+        :return: score value (float): Score associated with game state.
         """
         if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
+            raise SearchTimeout() # Raise if time is exceeded.
 
-        if depth == 0:  # too deep, get the score
+        if depth == 0:  # Get the score once the depth has reached the limit.
             return self.score(game, self)
 
         legal_moves = game.get_legal_moves()
 
-        if not legal_moves:  # leaf or dead end
+        if not legal_moves:  # Get the score if no legal moves (i.e., leaf or dead end).
             return self.score(game, self)
 
-        if is_maximizing_player:  # based on wikipedia example code
+        if is_maximizing_player:  # based on Wikipedia example code. Recursive Minimax.
             best_move_score = float("-inf")
-            for child_node_move in legal_moves:  # for each possible child node
+            for child_node_move in legal_moves:  # for each child node, call minimizer.
                 child_node_move_score = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, False)
                 best_move_score = max(best_move_score, child_node_move_score)
             return best_move_score
 
         else:  # minimizer
             best_move_score = float("inf")
-            for child_node_move in legal_moves:
+            for child_node_move in legal_moves: # for each child node, call maximizer.
                 child_node_move_score = MinimaxPlayer.minimax_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, True)
                 best_move_score = min(best_move_score, child_node_move_score)
             return best_move_score
@@ -349,15 +349,13 @@ class AlphaBetaPlayer(IsolationPlayer):
             (-1, -1) if there are no available legal moves.
         """
         self.time_left = time_left
-        best_move = (-1, -1) # initialize with losing move
-        try:
-            # The try/except block will automatically catch the exception
-            # raised when the timer is about to expire.
+        best_move = (-1, -1) # Initialize with losing move.
+        try: # The try/except block will automatically catch the exception raised when the timer is about to expire.
             current_depth = 1
             while True:
                 best_move = self.alphabeta(game, current_depth)
-                current_depth += 1
-        except SearchTimeout: # Handle any actions required after timeout as needed
+                current_depth += 1 # Run alphabeta with increasing depth.
+        except SearchTimeout:
             return best_move  # Return the best move from the last completed search iteration
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
@@ -411,29 +409,39 @@ class AlphaBetaPlayer(IsolationPlayer):
         legal_moves = game.get_legal_moves()
 
         if not legal_moves:
-            return (-1, -1) # no valid moves, means you lose
+            return (-1, -1) # No valid moves (lose).
 
-        legal_move_to_score_map = {}
+        legal_move_to_score_map = {} # Get the score of each legal move {legal_move1: score1, legal_move2: score2, etc...}
         for legal_move in legal_moves:
-            legal_move_to_score_map[legal_move] = AlphaBetaPlayer.alphabeta_recursion_helper(self, game.forecast_move(legal_move), depth - 1, False, alpha, beta)
+            legal_move_to_score_map[legal_move] = AlphaBetaPlayer.alphabeta_recursion_helper(self, game.forecast_move(legal_move), depth - 1, False, alpha, beta) # We start with the root, which is a maximizer (so we pass False).
             alpha = max(alpha, legal_move_to_score_map[legal_move])
         best_move = max(legal_move_to_score_map, key=lambda k: legal_move_to_score_map[k])
-        # print("our legal move score map: %s" % legal_move_to_score_map)
         return best_move
 
     def alphabeta_recursion_helper(self, game, depth, is_maximizing_player, alpha, beta):
+        '''
+        Description: This helper function implements the recursive portion of the alpha beta algorithm from the text. When called from the alphabeta function, alphabeta_recursion_helper will return the score associated with the best_move to take from the root.
+
+        :param self: (AlphaBetaPlayer) AlphaBetaPlayer object.
+        :param game: (isolation.Board) Isolation game object.
+        :param depth: (int) Number of levels to traverse.
+        :param is_maximizing_player: (boolean) True if maximizer node; False if minimizer node.
+        :param alpha: (float) Maximum score on path to the maximizer node.
+        :param beta: (float) Minimum score on path to the minimizer node.
+        :return: Score value (float): Score associated with the game state.
+        '''
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        if depth == 0:  # too deep, get the score
+        if depth == 0:  # Depth limit reached; return the score.
             return self.score(game, self)
 
         legal_moves = game.get_legal_moves()
 
-        if not legal_moves:  # leaf or dead end
+        if not legal_moves:  # Leaf or dead end. Return Score.
             return self.score(game, self)
 
-        if is_maximizing_player:
+        if is_maximizing_player: # Recursive alpha beta.
             best_child_node_move_score = float("-inf")
             for child_node_move in legal_moves:  # for each possible child node
                 best_child_node_move_score = max(best_child_node_move_score, AlphaBetaPlayer.alphabeta_recursion_helper(self, game.forecast_move(child_node_move), depth - 1, False, alpha, beta))
