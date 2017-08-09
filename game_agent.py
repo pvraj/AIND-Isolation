@@ -55,13 +55,12 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+    moves_total_spaces_ratio = game.move_count / (game.height * game.width)
+    if moves_total_spaces_ratio < 0.30:
+        return get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), True)
     my_moves = frozenset(game.get_legal_moves(player))
-    if len(enemy_moves) < 1:
-        return 2*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
-    else:
-        return 2*(len(my_moves) / len(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), (game.height/2, game.width/2), False)
-
+    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+    return 3*(len(my_moves) - len(enemy_moves)) + len(my_moves.intersection(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -94,17 +93,10 @@ def custom_score_2(game, player):
         return float("inf")
 
     moves_total_spaces_ratio = game.move_count / (game.height * game.width)
-    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
+    if moves_total_spaces_ratio < 0.30:
+        return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
     my_moves = frozenset(game.get_legal_moves(player))
-
-    if moves_total_spaces_ratio > 0.45:
-        if len(enemy_moves) < 1:
-            return 2*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
-        return 2*(len(my_moves) / len(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
-    else:
-        if len(enemy_moves) < 1:
-            return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + 2*len(my_moves)
-        return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False) + 2*(len(my_moves) / len(enemy_moves))
+    return 3*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -139,9 +131,9 @@ def custom_score_3(game, player):
     moves_total_spaces_ratio = game.move_count / (game.height * game.width)
     if moves_total_spaces_ratio < 0.30:
         return get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), False)
-    enemy_moves = frozenset(game.get_legal_moves(game.get_opponent(player)))
     my_moves = frozenset(game.get_legal_moves(player))
-    return get_distance_between_2_points(game.get_player_location(player), (game.height / 2, game.width / 2), True) + 2*(len(my_moves) - len(enemy_moves)) + 2*(len(my_moves.intersection(enemy_moves)))
+    return 2*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
+
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
