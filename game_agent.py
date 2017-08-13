@@ -11,11 +11,11 @@ class SearchTimeout(Exception):
 
 def get_distance_between_2_points(current_player_location, enemy_player_location, maximize_distance):
     '''
-    Description: Given as input 2 coordinates, return the distance between them. (If specified, return the distance in negative form).
-    :param current_player_location: (tuple of 2 integers) Current player's location in tuple form.
-    :param enemy_player_location: (tuple of 2 integers) Enemy Player's location in tuple form.
-    :param maximize_distance: (boolean). True if maximizing distance. False if minimizing distance. The purpose of this is in heuristics where a greater distance corresponds to a greater score, a positive value is desired. In heuristics where a smaller distance corresponds to a greater score we need to invert the distance to a negative number. For example, if maximizing the distance between 2 points, 5 > 1. If minimizing the distance between 2 points, -1 * 1 > -1 * 5.
-    :return: (float) Distance between 2 pairs of coordinates as a positive or negative float.
+        Description: Given as input 2 coordinates, return the distance between them. (If specified, return the distance in negative form).
+        :param current_player_location: (tuple of 2 integers) Current player's location in tuple form.
+        :param enemy_player_location: (tuple of 2 integers) Enemy player's location in tuple form.
+        :param maximize_distance: (boolean). True if maximizing distance. False if minimizing distance. The purpose of this is in heuristics where a greater distance corresponds to a greater score, a positive value is desired. In heuristics where a smaller distance corresponds to a greater score we need to invert the distance to a negative number. For example, if maximizing the distance between 2 points, 5 > 1. If minimizing the distance between 2 points, -1 * 1 > -1 * 5.
+        :return: (float) Distance between 2 pairs of coordinates as a positive or negative float.
     '''
     current_player_x, current_player_y = current_player_location
     enemy_player_x, enemy_player_y = enemy_player_location
@@ -27,7 +27,7 @@ def custom_score(game, player):
     """Description: Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    Heuristic: Using the distance formula, maximize the distance between our player and the enemy player (essentially, run away from the opponent, to go into a 'survival' mode).
+    Heuristic: Using the distance formula, maximize the distance between our agent and the center of the board while the ratio of moves to total spaces is < 30% (essentially, use the 'bad moves' first, saving the 'good moves' for last). When the ratio exceeds 30%, return a linear combination consisting of the following: number of moves available to my agent; number of moves available to the enemy agent; number of intersecting moves between the agents; distance between the 2 agents.
 
     This should be the best heuristic function for your project submission.
 
@@ -63,10 +63,10 @@ def custom_score(game, player):
     return 3*(len(my_moves) - len(enemy_moves)) + len(my_moves.intersection(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
 
 def custom_score_2(game, player):
-    """Calculate the heuristic value of a game state from the point of view
+    """Description: Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    Heuristic: Using the distance formula, minimize the distance between our player and the enemy player (essentially, aggressively follow the opponent to attempt to mimick their moves and avoid being boxed in). Reflection is not as easy with knights as it is with queens because knights cannot don't have the ability to move to as many spaces as queens. However, by keeping the knight following
+    Heuristic: Using the distance formula, maximize the distance between our agent and the enemy agent while the ratio of moves to total spaces is < 30% (essentially, "run away"). When the ratio exceeds 30%, return a linear combination consisting of the following: number of moves available to my agent; distance between the 2 agents.
 
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
@@ -99,10 +99,10 @@ def custom_score_2(game, player):
     return 3*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
 
 def custom_score_3(game, player):
-    """Calculate the heuristic value of a game state from the point of view
+    """Description: Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    Heuristic: Attempt to "circle the enemy" by focusing on the spaces closest to the corners of the board. Specifically, assign a score based on the highest distance to a corner from a space.
+    Heuristic: Using the distance formula, minimize the distance between our agent and the enemy agent while the ratio of moves to total spaces is < 30% (essentially, aggressively follow the opponent to attempt to mimic their path and avoid being boxed in). When the ratio exceeds 30%, return a linear combination consisting of the following: number of moves available to my agent; distance between the 2 agents.
 
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
@@ -348,7 +348,7 @@ class AlphaBetaPlayer(IsolationPlayer):
                 best_move = self.alphabeta(game, current_depth)
                 current_depth += 1 # Run alphabeta with increasing depth.
         except SearchTimeout:
-            return best_move  # Return the best move from the last completed search iteration
+            return best_move  # Return the best move from the last completed search iteration.
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
