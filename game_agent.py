@@ -14,7 +14,7 @@ def get_distance_between_2_points(current_player_location, enemy_player_location
         Description: Given as input 2 coordinates, return the distance between them. (If specified, return the distance in negative form).
         :param current_player_location: (tuple of 2 integers) Current player's location in tuple form.
         :param enemy_player_location: (tuple of 2 integers) Enemy player's location in tuple form.
-        :param maximize_distance: (boolean). True if maximizing distance. False if minimizing distance. The purpose of this is in heuristics where a greater distance corresponds to a greater score, a positive value is desired. In heuristics where a smaller distance corresponds to a greater score we need to invert the distance to a negative number. For example, if maximizing the distance between 2 points, 5 > 1. If minimizing the distance between 2 points, -1 * 1 > -1 * 5.
+        :param maximize_distance: (boolean). True if maximizing distance. False if minimizing distance. The purpose of this is in heuristics where a greater distance corresponds to a greater score, a positive value is desired. In heuristics where a smaller distance corresponds to a greater score, a negative number is desired (thus the distance is inverted with -1). For example, if maximizing the distance between 2 points, 5 > 1. If minimizing the distance between 2 points, -1 * 1 > -1 * 5.
         :return: (float) Distance between 2 pairs of coordinates as a positive or negative float.
     '''
     current_player_x, current_player_y = current_player_location
@@ -24,8 +24,7 @@ def get_distance_between_2_points(current_player_location, enemy_player_location
     return -1 * sqrt(((enemy_player_y - current_player_y) ** 2) + ((enemy_player_x - current_player_x) ** 2))
 
 def custom_score(game, player):
-    """Description: Calculate the heuristic value of a game state from the point of view
-    of the given player.
+    """Description: Calculate the heuristic value of a game state from the point of view of the given player.
 
     Heuristic: Using the distance formula, maximize the distance between our agent and the center of the board while the ratio of moves to total spaces is < 30% (essentially, use the 'bad moves' first, saving the 'good moves' for last). When the ratio exceeds 30%, return a linear combination consisting of the following: number of moves available to my agent; number of moves available to the enemy agent; number of intersecting moves between the agents; distance between the 2 agents.
 
@@ -63,8 +62,7 @@ def custom_score(game, player):
     return 3*(len(my_moves) - len(enemy_moves)) + len(my_moves.intersection(enemy_moves)) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
 
 def custom_score_2(game, player):
-    """Description: Calculate the heuristic value of a game state from the point of view
-    of the given player.
+    """Description: Calculate the heuristic value of a game state from the point of view of the given player.
 
     Heuristic: Using the distance formula, maximize the distance between our agent and the enemy agent while the ratio of moves to total spaces is < 30% (essentially, "run away"). When the ratio exceeds 30%, return a linear combination consisting of the following: number of moves available to my agent; distance between the 2 agents.
 
@@ -99,8 +97,7 @@ def custom_score_2(game, player):
     return 3*len(my_moves) + get_distance_between_2_points(game.get_player_location(player), game.get_player_location(game.get_opponent(player)), True)
 
 def custom_score_3(game, player):
-    """Description: Calculate the heuristic value of a game state from the point of view
-    of the given player.
+    """Description: Calculate the heuristic value of a game state from the point of view of the given player.
 
     Heuristic: Using the distance formula, minimize the distance between our agent and the enemy agent while the ratio of moves to total spaces is < 30% (essentially, aggressively follow the opponent to attempt to mimic their path and avoid being boxed in). When the ratio exceeds 30%, return a linear combination consisting of the following: number of moves available to my agent; distance between the 2 agents.
 
